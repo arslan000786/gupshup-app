@@ -4,7 +4,8 @@ import {
   createUserWithEmailAndPassword, 
   signInWithEmailAndPassword, 
   signOut, 
-  onAuthStateChanged 
+  onAuthStateChanged,
+  sendPasswordResetEmail
 } from 'firebase/auth';
 import { 
   collection, addDoc, updateDoc, doc, increment, onSnapshot, query, arrayUnion 
@@ -19,7 +20,15 @@ export default function App() {
   const [user, setUser] = useState(null);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  
+  // Extra Signup States
+  const [usernameInput, setUsernameInput] = useState('');
+  const [genderInput, setGenderInput] = useState('Male');
+  const [countryInput, setCountryInput] = useState('Pakistan');
+  const [termsAccepted, setTermsAccepted] = useState(false);
+
   const [isSignUp, setIsSignUp] = useState(false);
+  const [isForgotPassword, setIsForgotPassword] = useState(false);
   const [activeTab, setActiveTab] = useState('reels');
   const [subTab, setSubTab] = useState('reels');
   const [reels, setReels] = useState([]);
@@ -49,7 +58,7 @@ export default function App() {
       if (reelsData.length === 0) {
         try {
           await addDoc(collection(db, "reels"), {
-            username: user ? user.email.split('@')[0] : "@cyber_ninja",
+            username: "cyber_ninja",
             caption: "Building modern UI tools with React and Tailwind CSS 🚀",
             mediaUrl: "https://assets.mixkit.co/videos/preview/mixkit-tree-branches-in-the-breeze-1185-large.mp4",
             mediaType: "video",
@@ -64,10 +73,15 @@ export default function App() {
       }
     });
     return () => unsubscribeReels();
-  }, [user]);
+  }, []);
 
   const handleAuth = async (e) => {
     e.preventDefault();
+    if (isSignUp && !termsAccepted) {
+      alert("Barah-e-karam Terms & Conditions ko accept karein!");
+      return;
+    }
+
     try {
       if (isSignUp) {
         await createUserWithEmailAndPassword(auth, email, password);
@@ -78,6 +92,21 @@ export default function App() {
       }
     } catch (error) {
       alert(error.message);
+    }
+  };
+
+  const handleForgotPassword = async (e) => {
+    e.preventDefault();
+    if (!email.trim()) {
+      alert("Pehle apna email address likhein!");
+      return;
+    }
+    try {
+      await sendPasswordResetEmail(auth, email);
+      alert("Password reset email bhej di gayi hai, apna inbox check karein!");
+      setIsForgotPassword(false);
+    } catch (error) {
+      alert("Masla aaya: " + error.message);
     }
   };
 
@@ -96,7 +125,6 @@ export default function App() {
     }
   };
 
-  // Handle File Selection and Convert to Local Object URL for preview/saving
   const handleFileChange = (e) => {
     const file = e.target.files[0];
     if (file) {
@@ -114,8 +142,10 @@ export default function App() {
     e.preventDefault();
     if (!captionInput.trim()) return;
     try {
+      // Current logged-in user ka username ya display name use karein
+      const current Username = user ? (user.displayName || user.email.split('@')[0]) : "user";
       await addDoc(collection(db, "reels"), {
-        username: user ? `@${user.email.split('@')[0]}` : "@user",
+        username: usernameInput.trim() || currentUsername,
         caption: captionInput,
         mediaUrl: mediaFile || "",
         mediaType: mediaType,
@@ -136,9 +166,10 @@ export default function App() {
     if (!commentInput.trim()) return;
     try {
       const reelRef = doc(db, "reels", reelId);
+      const commenterName = user ? (user.displayName || user.email.split('@')[0]) : "Anonymous";
       await updateDoc(reelRef, {
         comments: arrayUnion({
-          user: user ? user.email.split('@')[0] : "Anonymous",
+          user: commenterName,
           text: commentInput,
           time: new Date().toLocaleTimeString()
         })
@@ -157,45 +188,147 @@ export default function App() {
             <Flame className="w-8 h-8 text-pink-500" />
             <h1 className="text-2xl font-bold tracking-wider">GupShup</h1>
           </div>
+          
           <h2 className="text-xl font-semibold mb-4 text-center">
-            {isSignUp ? "Create a New Account" : "Welcome Back"}
+            {isForgotPassword ? "Reset Password" : (isSignUp ? "Create a New Account" : "Welcome Back")}
           </h2>
 
-          <form onSubmit={handleAuth} className="space-y-4">
-            <div>
-              <label className="block text-sm text-gray-400 mb-1">Email Address</label>
-              <input 
-                type="email" 
-                required
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="w-full bg-[#1a2233] border border-gray-700 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:border-pink-500"
-                placeholder="alex@example.com"
-              />
-            </div>
-            <div>
-              <label className="block text-sm text-gray-400 mb-1">Password</label>
-              <input 
-                type="password" 
-                required
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="w-full bg-[#1a2233] border border-gray-700 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:border-pink-500"
-                placeholder="••••••••"
-              />
-            </div>
-            <button 
-              type="submit"
-              className="w-full bg-gradient-to-r from-pink-500 to-purple-600 text-white font-semibold py-2.5 rounded-lg hover:opacity-90 transition"
-            >
-              {isSignUp ? "Sign Up" : "Log In"}
-            </button>
-          </form>
+          {isForgotPassword ? (
+            <form onSubmit={handleForgotPassword} className="space-y-4">
+              <div>
+                <label className="block text-sm text-gray-400 mb-1">Email Address</label>
+                <input 
+                  type="email" 
+                  required
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  className="w-full bg-[#1a2233] border border-gray-700 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:border-pink-500 text-sm"
+                  placeholder="alex@example.com"
+                />
+              </div>
+              <button 
+                type="submit"
+                className="w-full bg-gradient-to-r from-pink-500 to-purple-600 text-white font-semibold py-2.5 rounded-lg hover:opacity-90 transition text-sm"
+              >
+                Send Reset Link
+              </button>
+              <div className="text-center mt-3">
+                <button 
+                  type="button"
+                  onClick={() => setIsForgotPassword(false)}
+                  className="text-xs text-pink-400 hover:underline"
+                >
+                  Back to Login
+                </button>
+              </div>
+            </form>
+          ) : (
+            <form onSubmit={handleAuth} className="space-y-3">
+              {isSignUp && (
+                <>
+                  <div>
+                    <label className="block text-xs text-gray-400 mb-1">Username</label>
+                    <input 
+                      type="text" 
+                      required
+                      value={usernameInput}
+                      onChange={(e) => setUsernameInput(e.target.value)}
+                      className="w-full bg-[#1a2233] border border-gray-700 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-pink-500 text-sm"
+                      placeholder="cyber_ninja"
+                    />
+                  </div>
+                  <div className="flex gap-2">
+                    <div className="flex-1">
+                      <label className="block text-xs text-gray-400 mb-1">Gender</label>
+                      <select 
+                        value={genderInput}
+                        onChange={(e) => setGenderInput(e.target.value)}
+                        className="w-full bg-[#1a2233] border border-gray-700 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-pink-500 text-sm"
+                      >
+                        <option value="Male">Male</option>
+                        <option value="Female">Female</option>
+                        <option value="Other">Other</option>
+                      </select>
+                    </div>
+                    <div className="flex-1">
+                      <label className="block text-xs text-gray-400 mb-1">Country</label>
+                      <input 
+                        type="text" 
+                        required
+                        value={countryInput}
+                        onChange={(e) => setCountryInput(e.target.value)}
+                        className="w-full bg-[#1a2233] border border-gray-700 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-pink-500 text-sm"
+                        placeholder="Pakistan"
+                      />
+                    </div>
+                  </div>
+                </>
+              )}
+
+              <div>
+                <label className="block text-xs text-gray-400 mb-1">Email Address</label>
+                <input 
+                  type="email" 
+                  required
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  className="w-full bg-[#1a2233] border border-gray-700 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-pink-500 text-sm"
+                  placeholder="alex@example.com"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs text-gray-400 mb-1">Password</label>
+                <input 
+                  type="password" 
+                  required
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className="w-full bg-[#1a2233] border border-gray-700 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-pink-500 text-sm"
+                  placeholder="••••••••"
+                />
+              </div>
+
+              {isSignUp && (
+                <div className="flex items-center space-x-2 pt-1">
+                  <input 
+                    type="checkbox" 
+                    id="terms"
+                    checked={termsAccepted}
+                    onChange={(e) => setTermsAccepted(e.target.checked)}
+                    className="w-4 h-4 rounded bg-[#1a2233] border-gray-700 text-pink-500 focus:ring-pink-500"
+                  />
+                  <label htmlFor="terms" className="text-xs text-gray-400">
+                    I accept the <span className="text-pink-400 underline cursor-pointer">Terms & Conditions</span>
+                  </label>
+                </div>
+              )}
+
+              {!isSignUp && (
+                <div className="text-right">
+                  <button 
+                    type="button"
+                    onClick={() => setIsForgotPassword(true)}
+                    className="text-xs text-pink-400 hover:underline"
+                  >
+                    Forgot Password?
+                  </button>
+                </div>
+              )}
+
+              <button 
+                type="submit"
+                className="w-full bg-gradient-to-r from-pink-500 to-purple-600 text-white font-semibold py-2.5 rounded-lg hover:opacity-90 transition text-sm mt-2"
+              >
+                {isSignUp ? "Sign Up" : "Log In"}
+              </button>
+            </form>
+          )}
 
           <div className="text-center mt-4">
             <button 
-              onClick={() => setIsSignUp(!isSignUp)}
-              className="text-sm text-pink-400 hover:underline"
+              onClick={() => { setIsSignUp(!isSignUp); setIsForgotPassword(false); }}
+              className="text-xs text-pink-400 hover:underline"
             >
               {isSignUp ? "Already have an account? Log In" : "Don't have an account? Sign Up"}
             </button>
@@ -219,7 +352,7 @@ export default function App() {
               className={`flex items-center space-x-3 w-full px-4 py-3 rounded-xl transition ${activeTab === 'reels' ? 'bg-pink-500/20 text-pink-500 font-semibold' : 'text-gray-400 hover:bg-gray-800'}`}
             >
               <Flame className="w-5 h-5" />
-              <span>Reels & Live</span>
+              <span>Reels & Photos</span>
             </button>
             <button 
               onClick={() => setActiveTab('chats')} 
@@ -300,7 +433,7 @@ export default function App() {
               </div>
             </div>
 
-            {/* Reels Tab: Show only video posts */}
+            {/* Reels Tab: Video Posts with Comments Enabled */}
             {subTab === 'reels' && reels.filter(r => r.mediaType === 'video').map((reel) => (
               <div key={reel.id} className="w-full bg-[#121824] rounded-2xl overflow-hidden border border-gray-800 shadow-2xl relative mb-4">
                 <div className="p-4 flex justify-between items-center border-b border-gray-800">
@@ -344,13 +477,14 @@ export default function App() {
 
                   <div className="absolute bottom-4 left-4 text-left z-10 bg-black/40 p-2 rounded-lg backdrop-blur-sm max-w-[260px]">
                     <h3 className="font-bold flex items-center space-x-2 text-sm">
-                      <span>{reel.username}</span> 
+                      <span>@{reel.username}</span> 
                       <span className="text-[10px] bg-purple-600 px-1 py-0.5 rounded text-white">Verified</span>
                     </h3>
                     <p className="text-xs text-gray-200 mt-1">{reel.caption}</p>
                   </div>
                 </div>
 
+                {/* Comments Section */}
                 {activeCommentReel === reel.id && (
                   <div className="bg-[#1a2233] p-4 border-t border-gray-800 max-h-60 overflow-y-auto">
                     <h4 className="text-xs font-bold text-gray-400 mb-2 uppercase tracking-wider">Comments</h4>
@@ -384,7 +518,7 @@ export default function App() {
               </div>
             ))}
 
-            {/* Photos Tab: Show only photo posts */}
+            {/* Photos Tab: Photo Posts with Comments Enabled */}
             {subTab === 'photos' && reels.filter(r => r.mediaType === 'photo').map((reel) => (
               <div key={reel.id} className="w-full bg-[#121824] rounded-2xl overflow-hidden border border-gray-800 shadow-2xl relative mb-4">
                 <div className="p-4 flex justify-between items-center border-b border-gray-800">
@@ -409,15 +543,54 @@ export default function App() {
                       />
                       <span className="text-xs mt-1 font-bold">{(reel.likes || 0).toLocaleString()}</span>
                     </div>
+                    <div className="flex flex-col items-center">
+                      <MessageCircle 
+                        onClick={() => setActiveCommentReel(activeCommentReel === reel.id ? null : reel.id)}
+                        className="w-7 h-7 text-white hover:text-pink-500 cursor-pointer transition drop-shadow" 
+                      />
+                      <span className="text-xs mt-1 font-bold">{reel.comments ? reel.comments.length : 0}</span>
+                    </div>
                   </div>
 
                   <div className="absolute bottom-4 left-4 text-left z-10 bg-black/40 p-2 rounded-lg backdrop-blur-sm max-w-[260px]">
                     <h3 className="font-bold flex items-center space-x-2 text-sm">
-                      <span>{reel.username}</span> 
+                      <span>@{reel.username}</span> 
                     </h3>
                     <p className="text-xs text-gray-200 mt-1">{reel.caption}</p>
                   </div>
                 </div>
+
+                {/* Comments Section for Photos */}
+                {activeCommentReel === reel.id && (
+                  <div className="bg-[#1a2233] p-4 border-t border-gray-800 max-h-60 overflow-y-auto">
+                    <h4 className="text-xs font-bold text-gray-400 mb-2 uppercase tracking-wider">Comments</h4>
+                    <div className="space-y-2 mb-3">
+                      {reel.comments && reel.comments.length > 0 ? (
+                        reel.comments.map((c, index) => (
+                          <div key={index} className="bg-[#121824] p-2 rounded-lg text-xs">
+                            <span className="font-bold text-pink-400">@{c.user}: </span>
+                            <span className="text-gray-300">{c.text}</span>
+                          </div>
+                        ))
+                      ) : (
+                        <p className="text-xs text-gray-500 italic">Koi comment nahi hai. Pehla comment aap karein!</p>
+                      )}
+                    </div>
+
+                    <form onSubmit={(e) => handleAddComment(e, reel.id)} className="flex gap-2">
+                      <input 
+                        type="text" 
+                        placeholder="Write a comment..." 
+                        value={commentInput}
+                        onChange={(e) => setCommentInput(e.target.value)}
+                        className="flex-1 bg-[#121824] text-xs px-3 py-2 rounded-lg border border-gray-700 focus:outline-none focus:border-pink-500 text-white"
+                      />
+                      <button type="submit" className="bg-pink-500 hover:bg-pink-600 px-3 py-2 rounded-lg text-white text-xs">
+                        <Send className="w-3.5 h-3.5" />
+                      </button>
+                    </form>
+                  </div>
+                )}
               </div>
             ))}
 
@@ -499,6 +672,17 @@ export default function App() {
                     className="hidden"
                   />
                 </label>
+              </div>
+
+              <div>
+                <label className="block text-xs text-gray-400 mb-1">Your Username for Post</label>
+                <input 
+                  type="text"
+                  value={usernameInput}
+                  onChange={(e) => setUsernameInput(e.target.value)}
+                  placeholder="e.g. cyber_ninja"
+                  className="w-full bg-[#1a2233] border border-gray-700 rounded-lg p-2.5 text-xs text-white focus:outline-none focus:border-pink-500"
+                />
               </div>
 
               <div>
