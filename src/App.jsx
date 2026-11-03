@@ -12,7 +12,7 @@ import {
 import { 
   Flame, MessageSquare, Phone, User, Settings, 
   Image as ImageIcon, Radio, Heart, MessageCircle, Share2, 
-  Volume2, Camera, Plus, Sparkles, Send, X, Video, Image 
+  Volume2, Camera, Plus, Sparkles, Send, X, Video, Image as ImageIconLucide 
 } from 'lucide-react';
 
 export default function App() {
@@ -24,11 +24,10 @@ export default function App() {
   const [subTab, setSubTab] = useState('reels');
   const [reels, setReels] = useState([]);
   
-  // New Post & Comment States
   const [showUploadModal, setShowUploadModal] = useState(false);
   const [captionInput, setCaptionInput] = useState('');
   const [mediaUrlInput, setMediaUrlInput] = useState('');
-  const [mediaType, setMediaType] = useState('video'); // 'video' or 'photo'
+  const [mediaType, setMediaType] = useState('video');
   const [activeCommentReel, setActiveCommentReel] = useState(null);
   const [commentInput, setCommentInput] = useState('');
 
@@ -39,7 +38,6 @@ export default function App() {
     return () => unsubscribeAuth();
   }, []);
 
-  // Fetch Reels and auto-initialize if empty
   useEffect(() => {
     const q = query(collection(db, "reels"));
     const unsubscribeReels = onSnapshot(q, async (snapshot) => {
@@ -98,7 +96,6 @@ export default function App() {
     }
   };
 
-  // Upload New Reel / Post with Media Option
   const handleUploadReel = async (e) => {
     e.preventDefault();
     if (!captionInput.trim()) return;
@@ -120,7 +117,6 @@ export default function App() {
     }
   };
 
-  // Add Comment to a Reel
   const handleAddComment = async (e, reelId) => {
     e.preventDefault();
     if (!commentInput.trim()) return;
@@ -197,7 +193,6 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-[#0b0e14] text-white flex relative">
-      {/* Sidebar Navigation */}
       <aside className="w-64 bg-[#121824] border-r border-gray-800 p-4 flex flex-col justify-between hidden md:flex">
         <div>
           <div className="flex items-center space-x-2 mb-8 px-2">
@@ -254,11 +249,9 @@ export default function App() {
         </div>
       </aside>
 
-      {/* Main Content Area */}
       <main className="flex-1 flex flex-col items-center justify-start p-4 overflow-y-auto">
         {activeTab === 'reels' && (
           <div className="w-full max-w-sm flex flex-col items-center space-y-4">
-            {/* Top Bar */}
             <div className="flex items-center justify-between w-full bg-[#121824] p-3 rounded-xl border border-gray-800">
               <div className="flex space-x-1.5">
                 <button 
@@ -293,7 +286,6 @@ export default function App() {
               </div>
             </div>
 
-            {/* Reel Feed Content */}
             {subTab === 'reels' && reels.map((reel) => (
               <div key={reel.id} className="w-full bg-[#121824] rounded-2xl overflow-hidden border border-gray-800 shadow-2xl relative mb-4">
                 <div className="p-4 flex justify-between items-center border-b border-gray-800">
@@ -305,7 +297,6 @@ export default function App() {
                 </div>
                 
                 <div className="h-[420px] bg-gradient-to-b from-indigo-950 to-gray-900 flex flex-col items-center justify-center relative p-4 text-center overflow-hidden">
-                  {/* Display Media if available */}
                   {reel.mediaUrl ? (
                     reel.mediaType === 'photo' ? (
                       <img src={reel.mediaUrl} alt="Post media" className="absolute inset-0 w-full h-full object-cover opacity-80" />
@@ -319,7 +310,6 @@ export default function App() {
                     </>
                   )}
                   
-                  {/* Floating Action Buttons */}
                   <div className="absolute right-4 bottom-16 flex flex-col items-center space-y-4 z-10">
                     <div className="flex flex-col items-center">
                       <Heart 
@@ -341,7 +331,6 @@ export default function App() {
                     </div>
                   </div>
 
-                  {/* Reel Info */}
                   <div className="absolute bottom-4 left-4 text-left z-10 bg-black/40 p-2 rounded-lg backdrop-blur-sm max-w-[260px]">
                     <h3 className="font-bold flex items-center space-x-2 text-sm">
                       <span>{reel.username}</span> 
@@ -351,7 +340,6 @@ export default function App() {
                   </div>
                 </div>
 
-                {/* Comments Section Drawer */}
                 {activeCommentReel === reel.id && (
                   <div className="bg-[#1a2233] p-4 border-t border-gray-800 max-h-60 overflow-y-auto">
                     <h4 className="text-xs font-bold text-gray-400 mb-2 uppercase tracking-wider">Comments</h4>
@@ -370,4 +358,96 @@ export default function App() {
 
                     <form onSubmit={(e) => handleAddComment(e, reel.id)} className="flex gap-2">
                       <input 
-                        type="text"
+                        type="text" 
+                        placeholder="Write a comment..." 
+                        value={commentInput}
+                        onChange={(e) => setCommentInput(e.target.value)}
+                        className="flex-1 bg-[#121824] text-xs px-3 py-2 rounded-lg border border-gray-700 focus:outline-none focus:border-pink-500 text-white"
+                      />
+                      <button type="submit" className="bg-pink-500 hover:bg-pink-600 px-3 py-2 rounded-lg text-white text-xs">
+                        <Send className="w-3.5 h-3.5" />
+                      </button>
+                    </form>
+                  </div>
+                )}
+              </div>
+            ))}
+
+            {subTab === 'photos' && (
+              <div className="w-full bg-[#121824] p-6 rounded-2xl border border-gray-800 text-center">
+                <ImageIconLucide className="w-16 h-16 text-pink-500 mx-auto mb-4" />
+                <h2 className="text-xl font-bold">Photos Feed</h2>
+                <p className="text-gray-400 text-sm mt-2">Explore community photo streams and share your moments.</p>
+              </div>
+            )}
+
+            {subTab === 'live' && (
+              <div className="w-full bg-[#121824] p-6 rounded-2xl border border-gray-800 text-center">
+                <Radio className="w-16 h-16 text-emerald-500 mx-auto mb-4 animate-pulse" />
+                <h2 className="text-xl font-bold">Live Streams (3 Active)</h2>
+                <p className="text-gray-400 text-sm mt-2">Join ongoing live broadcasts from creators now.</p>
+              </div>
+            )}
+          </div>
+        )}
+
+        {activeTab === 'chats' && (
+          <div className="text-center mt-20">
+            <MessageSquare className="w-16 h-16 text-pink-500 mx-auto mb-4" />
+            <h2 className="text-2xl font-bold">Chats</h2>
+            <p className="text-gray-400 mt-2">No messages yet. Start chatting with friends!</p>
+          </div>
+        )}
+
+        {activeTab === 'calls' && (
+          <div className="text-center mt-20">
+            <Phone className="w-16 h-16 text-pink-500 mx-auto mb-4" />
+            <h2 className="text-2xl font-bold">Calls</h2>
+            <p className="text-gray-400 mt-2">No recent calls.</p>
+          </div>
+        )}
+
+        {activeTab === 'profile' && (
+          <div className="text-center mt-10 bg-[#121824] p-8 rounded-2xl border border-gray-800 max-w-md w-full">
+            <div className="w-20 h-20 bg-pink-500/20 text-pink-500 rounded-full flex items-center justify-center mx-auto mb-4 text-2xl font-bold">
+              {user.email[0].toUpperCase()}
+            </div>
+            <h2 className="text-xl font-bold">{user.email}</h2>
+            <p className="text-gray-400 text-sm mt-1">GupShup Verified User</p>
+            <button onClick={handleLogout} className="mt-6 bg-red-500 text-white px-6 py-2 rounded-lg font-semibold hover:bg-red-600 transition">
+              Log Out
+            </button>
+          </div>
+        )}
+
+        {activeTab === 'settings' && (
+          <div className="text-center mt-20">
+            <Settings className="w-16 h-16 text-pink-500 mx-auto mb-4" />
+            <h2 className="text-2xl font-bold">Settings</h2>
+            <p className="text-gray-400 mt-2">Manage your account preferences here.</p>
+          </div>
+        )}
+      </main>
+
+      {showUploadModal && (
+        <div className="fixed inset-0 bg-black/70 flex items-center justify-center p-4 z-50">
+          <div className="bg-[#121824] p-6 rounded-2xl w-full max-w-md border border-gray-800 shadow-2xl relative">
+            <button 
+              onClick={() => setShowUploadModal(false)}
+              className="absolute top-4 right-4 text-gray-400 hover:text-white"
+            >
+              <X className="w-5 h-5" />
+            </button>
+            <h3 className="text-lg font-bold mb-4 flex items-center gap-2">
+              <Camera className="text-pink-500 w-5 h-5" />
+              <span>Upload Video or Photo Post</span>
+            </h3>
+
+            <form onSubmit={handleUploadReel} className="space-y-4">
+              <div>
+                <label className="block text-xs text-gray-400 mb-1.5">Select Media Type</label>
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setMediaType('video')}
+                    className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-lg text-xs font-semibold border
