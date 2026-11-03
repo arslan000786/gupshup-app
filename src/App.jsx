@@ -450,4 +450,57 @@ export default function App() {
                   <button
                     type="button"
                     onClick={() => setMediaType('video')}
-                    className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-lg text-xs font-semibold border
+                    className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-lg text-xs font-semibold border transition ${mediaType === 'video' ? 'bg-pink-500/20 border-pink-500 text-pink-400' : 'bg-[#1a2233] border-gray-700 text-gray-400'}`}
+                  >
+                    <Video className="w-4 h-4" />
+                    <span>Video</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setMediaType('photo')}
+                    className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-lg text-xs font-semibold border transition ${mediaType === 'photo' ? 'bg-pink-500/20 border-pink-500 text-pink-400' : 'bg-[#1a2233] border-gray-700 text-gray-400'}`}
+                  >
+                    <ImageIconLucide className="w-4 h-4" />
+                    <span>Photo</span>
+                  </button>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs text-gray-400 mb-1">
+                  {mediaType === 'video' ? 'Video Direct URL (mp4)' : 'Photo Direct URL (jpg/png)'}
+                </label>
+                <input 
+                  type="url"
+                  value={mediaUrlInput}
+                  onChange={(e) => setMediaUrlInput(e.target.value)}
+                  placeholder={mediaType === 'video' ? 'https://example.com/video.mp4' : 'https://example.com/image.jpg'}
+                  className="w-full bg-[#1a2233] border border-gray-700 rounded-lg p-2.5 text-xs text-white focus:outline-none focus:border-pink-500"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs text-gray-400 mb-1">Caption / Description</label>
+                <textarea 
+                  rows="3"
+                  required
+                  value={captionInput}
+                  onChange={(e) => setCaptionInput(e.target.value)}
+                  placeholder="What's happening on your mind today? 🚀"
+                  className="w-full bg-[#1a2233] border border-gray-700 rounded-lg p-3 text-xs text-white focus:outline-none focus:border-pink-500"
+                ></textarea>
+              </div>
+
+              <button 
+                type="submit"
+                className="w-full bg-gradient-to-r from-pink-500 to-purple-600 text-white font-semibold py-2.5 rounded-lg hover:opacity-90 transition text-sm shadow-lg"
+              >
+                Publish to Firestore
+              </button>
+            </form>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
