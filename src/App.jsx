@@ -431,6 +431,7 @@ export default function App() {
               </div>
             </div>
 
+            {/* Reels Tab: Video Posts */}
             {subTab === 'reels' && reels.filter(r => r.mediaType === 'video').map((reel) => (
               <div key={reel.id} className="w-full bg-[#121824] rounded-2xl overflow-hidden border border-gray-800 shadow-2xl relative mb-4">
                 <div className="p-4 flex justify-between items-center border-b border-gray-800">
@@ -443,15 +444,15 @@ export default function App() {
                 
                 <div className="h-[420px] bg-gradient-to-b from-indigo-950 to-gray-900 flex flex-col items-center justify-center relative p-4 text-center overflow-hidden">
                   {reel.mediaUrl ? (
-                    <video src={reel.mediaUrl} controls className="absolute inset-0 w-full h-full object-cover" />
+                    <video src={reel.mediaUrl} controls className="absolute inset-0 w-full h-full object-cover z-0" />
                   ) : (
                     <>
-                      <Flame className="w-16 h-16 text-pink-500 mb-4 animate-pulse" />
-                      <h2 className="font-bold text-lg text-gray-200">GupShup Video Reel</h2>
+                      <Flame className="w-16 h-16 text-pink-500 mb-4 animate-pulse z-0" />
+                      <h2 className="font-bold text-lg text-gray-200 z-0">GupShup Video Reel</h2>
                     </>
                   )}
                   
-                  <div className="absolute right-4 bottom-16 flex flex-col items-center space-y-4 z-10">
+                  <div className="absolute right-4 bottom-16 flex flex-col items-center space-y-4 z-20">
                     <div className="flex flex-col items-center">
                       <Heart 
                         onClick={() => handleLike(reel.id)} 
@@ -472,9 +473,9 @@ export default function App() {
                     </div>
                   </div>
 
-                  <div className="absolute bottom-4 left-4 text-left z-10 bg-black/40 p-2 rounded-lg backdrop-blur-sm max-w-[260px]">
-                    <h3 className="font-bold flex items-center space-x-2 text-sm">
-                      <span>@{reel.username}</span> 
+                  <div className="absolute bottom-4 left-4 text-left z-20 bg-black/60 p-2.5 rounded-lg backdrop-blur-sm max-w-[260px]">
+                    <h3 className="font-bold flex items-center space-x-2 text-sm text-white">
+                      <span>@{reel.username ? reel.username.replace(/^@+/, '') : 'user'}</span> 
                       <span className="text-[10px] bg-purple-600 px-1 py-0.5 rounded text-white">Verified</span>
                     </h3>
                     <p className="text-xs text-gray-200 mt-1">{reel.caption}</p>
@@ -488,7 +489,7 @@ export default function App() {
                       {reel.comments && reel.comments.length > 0 ? (
                         reel.comments.map((c, index) => (
                           <div key={index} className="bg-[#121824] p-2 rounded-lg text-xs">
-                            <span className="font-bold text-pink-400">@{c.user}: </span>
+                            <span className="font-bold text-pink-400">@{c.user ? c.user.replace(/^@+/, '') : 'Anonymous'}: </span>
                             <span className="text-gray-300">{c.text}</span>
                           </div>
                         ))
@@ -514,6 +515,7 @@ export default function App() {
               </div>
             ))}
 
+            {/* Photos Tab: Photo Posts */}
             {subTab === 'photos' && reels.filter(r => r.mediaType === 'photo').map((reel) => (
               <div key={reel.id} className="w-full bg-[#121824] rounded-2xl overflow-hidden border border-gray-800 shadow-2xl relative mb-4">
                 <div className="p-4 flex justify-between items-center border-b border-gray-800">
@@ -525,12 +527,12 @@ export default function App() {
                 
                 <div className="h-[420px] bg-gradient-to-b from-indigo-950 to-gray-900 flex flex-col items-center justify-center relative p-4 text-center overflow-hidden">
                   {reel.mediaUrl ? (
-                    <img src={reel.mediaUrl} alt="Photo Post" className="absolute inset-0 w-full h-full object-cover" />
+                    <img src={reel.mediaUrl} alt="Photo Post" className="absolute inset-0 w-full h-full object-cover z-0" />
                   ) : (
-                    <p className="text-gray-400 text-xs">No Image found</p>
+                    <p className="text-gray-400 text-xs z-0">No Image found</p>
                   )}
                   
-                  <div className="absolute right-4 bottom-16 flex flex-col items-center space-y-4 z-10">
+                  <div className="absolute right-4 bottom-16 flex flex-col items-center space-y-4 z-20">
                     <div className="flex flex-col items-center">
                       <Heart 
                         onClick={() => handleLike(reel.id)} 
@@ -547,9 +549,9 @@ export default function App() {
                     </div>
                   </div>
 
-                  <div className="absolute bottom-4 left-4 text-left z-10 bg-black/40 p-2 rounded-lg backdrop-blur-sm max-w-[260px]">
-                    <h3 className="font-bold flex items-center space-x-2 text-sm">
-                      <span>@{reel.username}</span> 
+                  <div className="absolute bottom-4 left-4 text-left z-20 bg-black/60 p-2.5 rounded-lg backdrop-blur-sm max-w-[260px]">
+                    <h3 className="font-bold flex items-center space-x-2 text-sm text-white">
+                      <span>@{reel.username ? reel.username.replace(/^@+/, '') : 'user'}</span> 
                     </h3>
                     <p className="text-xs text-gray-200 mt-1">{reel.caption}</p>
                   </div>
@@ -562,7 +564,7 @@ export default function App() {
                       {reel.comments && reel.comments.length > 0 ? (
                         reel.comments.map((c, index) => (
                           <div key={index} className="bg-[#121824] p-2 rounded-lg text-xs">
-                            <span className="font-bold text-pink-400">@{c.user}: </span>
+                            <span className="font-bold text-pink-400">@{c.user ? c.user.replace(/^@+/, '') : 'Anonymous'}: </span>
                             <span className="text-gray-300">{c.text}</span>
                           </div>
                         ))
