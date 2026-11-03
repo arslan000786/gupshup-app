@@ -21,7 +21,6 @@ export default function App() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   
-  // Extra Signup States
   const [usernameInput, setUsernameInput] = useState('');
   const [genderInput, setGenderInput] = useState('Male');
   const [countryInput, setCountryInput] = useState('Pakistan');
@@ -142,10 +141,9 @@ export default function App() {
     e.preventDefault();
     if (!captionInput.trim()) return;
     try {
-      // Current logged-in user ka username ya display name use karein
-      const current Username = user ? (user.displayName || user.email.split('@')[0]) : "user";
+      const defaultUser = user ? (user.displayName || user.email.split('@')[0]) : "user";
       await addDoc(collection(db, "reels"), {
-        username: usernameInput.trim() || currentUsername,
+        username: usernameInput.trim() || defaultUser,
         caption: captionInput,
         mediaUrl: mediaFile || "",
         mediaType: mediaType,
@@ -433,7 +431,6 @@ export default function App() {
               </div>
             </div>
 
-            {/* Reels Tab: Video Posts with Comments Enabled */}
             {subTab === 'reels' && reels.filter(r => r.mediaType === 'video').map((reel) => (
               <div key={reel.id} className="w-full bg-[#121824] rounded-2xl overflow-hidden border border-gray-800 shadow-2xl relative mb-4">
                 <div className="p-4 flex justify-between items-center border-b border-gray-800">
@@ -484,7 +481,6 @@ export default function App() {
                   </div>
                 </div>
 
-                {/* Comments Section */}
                 {activeCommentReel === reel.id && (
                   <div className="bg-[#1a2233] p-4 border-t border-gray-800 max-h-60 overflow-y-auto">
                     <h4 className="text-xs font-bold text-gray-400 mb-2 uppercase tracking-wider">Comments</h4>
@@ -518,7 +514,6 @@ export default function App() {
               </div>
             ))}
 
-            {/* Photos Tab: Photo Posts with Comments Enabled */}
             {subTab === 'photos' && reels.filter(r => r.mediaType === 'photo').map((reel) => (
               <div key={reel.id} className="w-full bg-[#121824] rounded-2xl overflow-hidden border border-gray-800 shadow-2xl relative mb-4">
                 <div className="p-4 flex justify-between items-center border-b border-gray-800">
@@ -560,7 +555,6 @@ export default function App() {
                   </div>
                 </div>
 
-                {/* Comments Section for Photos */}
                 {activeCommentReel === reel.id && (
                   <div className="bg-[#1a2233] p-4 border-t border-gray-800 max-h-60 overflow-y-auto">
                     <h4 className="text-xs font-bold text-gray-400 mb-2 uppercase tracking-wider">Comments</h4>
