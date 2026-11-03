@@ -33,14 +33,28 @@ export default function App() {
     return () => unsubscribeAuth();
   }, []);
 
+  // Fetch Reels or Initialize Default Reel in Firestore
   useEffect(() => {
     const q = query(collection(db, "reels"));
-    const unsubscribeReels = onSnapshot(q, (snapshot) => {
+    const unsubscribeReels = onSnapshot(q, async (snapshot) => {
       const reelsData = snapshot.docs.map(doc => ({
         id: doc.id,
         ...doc.data()
       }));
-      if (reelsData.length > 0) {
+      
+      if (reelsData.length === 0) {
+        // Agar database khali hai toh pehli default post khud hi save kar do
+        try {
+          await addDoc(collection(db, "reels"), {
+            username: "@cyber_ninja",
+            caption: "Building modern UI tools with React and Tailwind CSS 🚀",
+            likes: 42100,
+            comments: 1420
+          });
+        } catch (err) {
+          console.log("Error adding default reel:", err);
+        }
+      } else {
         setReels(reelsData);
       }
     });
