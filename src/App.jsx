@@ -1,11 +1,14 @@
 import React, { useState, useEffect } from 'react';
-import { auth } from './firebase';
+import { auth, db } from './firebase';
 import { 
   createUserWithEmailAndPassword, 
   signInWithEmailAndPassword, 
   signOut, 
   onAuthStateChanged 
 } from 'firebase/auth';
+import { 
+  collection, addDoc, getDocs, updateDoc, doc, increment, onSnapshot, query, orderBy 
+} from 'firebase/firestore';
 import { 
   Flame, MessageSquare, Phone, User, Settings, 
   Image as ImageIcon, Radio, Heart, MessageCircle, Share2, 
@@ -19,12 +22,31 @@ export default function App() {
   const [isSignUp, setIsSignUp] = useState(false);
   const [activeTab, setActiveTab] = useState('reels');
   const [subTab, setSubTab] = useState('reels');
+  const [reels, setReels] = useState([
+    { id: '1', username: '@cyber_ninja', caption: 'Building modern UI tools with React and Tailwind CSS 🚀', likes: 42100, comments: 1420 }
+  ]);
 
+  // Auth State Listener
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+    const unsubscribeAuth = onAuthStateChanged(auth, (currentUser) => {
       setUser(currentUser);
     });
-    return () => unsubscribe();
+    return () => unsubscribeAuth();
+  }, []);
+
+  // Fetch Reels from Firestore Real-time
+  useEffect(() => {
+    const q = query(collection(db, "reels"));
+    const unsubscribeReels = onSnapshot(q, (snapshot) => {
+      const reelsData = snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      }));
+      if (reelsData.length > 0) {
+        setReels(reelsData);
+      }
+    });
+    return () => unsubscribeReels();
   }, []);
 
   const handleAuth = async (e) => {
@@ -44,6 +66,19 @@ export default function App() {
 
   const handleLogout = () => {
     signOut(auth);
+  };
+
+  // Like Reel Function
+  const handleLike = async (reelId) => {
+    try {
+      const reelRef = doc(db, "reels", reelId);
+      await updateDoc(reelRef, {
+        likes: increment(1)
+      });
+    } catch (error) {
+      // Agar Firestore mein document pehle se na ho toh default local state update karein
+      setReels(reels.map(r => r.id === reelId ? { ...r, likes: r.likes + 1 } : r));
+    }
   };
 
   if (!user) {
@@ -166,7 +201,7 @@ export default function App() {
       <main className="flex-1 flex flex-col items-center justify-start p-4 overflow-y-auto">
         {activeTab === 'reels' && (
           <div className="w-full max-w-sm flex flex-col items-center space-y-4">
-            {/* Top Bar with Reels, Photos, Live & Go Live */}
+            {/* Top Bar */}
             <div className="flex items-center justify-between w-full bg-[#121824] p-3 rounded-xl border border-gray-800">
               <div className="flex space-x-1.5">
                 <button 
@@ -201,8 +236,8 @@ export default function App() {
             </div>
 
             {/* Reel Feed Content */}
-            {subTab === 'reels' && (
-              <div className="w-full bg-[#121824] rounded-2xl overflow-hidden border border-gray-800 shadow-2xl relative">
+            {subTab === 'reels' && reels.map((reel) => (
+              <div key={reel.id} className="w-full bg-[#121824] rounded-2xl overflow-hidden border border-gray-800 shadow-2xl relative mb-4">
                 <div className="p-4 flex justify-between items-center border-b border-gray-800">
                   <span className="bg-pink-500/20 text-pink-400 text-xs px-3 py-1 rounded-full font-semibold flex items-center space-x-1">
                     <Flame className="w-3.5 h-3.5" />
@@ -213,7 +248,7 @@ export default function App() {
                 
                 <div className="h-[450px] bg-gradient-to-b from-indigo-950 to-gray-900 flex flex-col items-center justify-center relative p-4 text-center">
                   <Flame className="w-16 h-16 text-pink-500 mb-4 animate-pulse" />
-                  <h2 className="font-bold text-lg text-gray-200">VERTICAL REEL STREAM #1</h2>
+                  <h2 className="font-bold text-lg text-gray-200">VERTICAL REEL STREAM</h2>
                   
                   {/* Floating Action Buttons */}
                   <div className="absolute right-4 bottom-16 flex flex-col items-center space-y-4">
@@ -226,12 +261,15 @@ export default function App() {
                       </div>
                     </div>
                     <div className="flex flex-col items-center">
-                      <Heart className="w-7 h-7 text-white hover:text-pink-500 cursor-pointer transition" />
-                      <span className="text-xs mt-1">42,100</span>
+                      <Heart 
+                        onClick={() => handleLike(reel.id)} 
+                        className="w-7 h-7 text-white hover:text-pink-500 cursor-pointer transition active:scale-125" 
+                      />
+                      <span className="text-xs mt-1">{reel.likes.toLocaleString()}</span>
                     </div>
                     <div className="flex flex-col items-center">
                       <MessageCircle className="w-7 h-7 text-white hover:text-pink-500 cursor-pointer transition" />
-                      <span className="text-xs mt-1">1,420</span>
+                      <span className="text-xs mt-1">{reel.comments}</span>
                     </div>
                     <div className="flex flex-col items-center">
                       <Share2 className="w-7 h-7 text-white hover:text-pink-500 cursor-pointer transition" />
@@ -242,14 +280,14 @@ export default function App() {
                   {/* Reel Info */}
                   <div className="absolute bottom-4 left-4 text-left">
                     <h3 className="font-bold flex items-center space-x-2">
-                      <span>@cyber_ninja</span> 
+                      <span>{reel.username}</span> 
                       <span className="text-xs bg-purple-600 px-1.5 py-0.5 rounded text-white">Verified</span>
                     </h3>
-                    <p className="text-xs text-gray-300 mt-1">Building modern UI tools with React and Tailwind CSS 🚀</p>
+                    <p className="text-xs text-gray-300 mt-1">{reel.caption}</p>
                   </div>
                 </div>
               </div>
-            )}
+            ))}
 
             {subTab === 'photos' && (
               <div className="w-full bg-[#121824] p-6 rounded-2xl border border-gray-800 text-center">
@@ -300,12 +338,4 @@ export default function App() {
 
         {activeTab === 'settings' && (
           <div className="text-center mt-20">
-            <Settings className="w-16 h-16 text-pink-500 mx-auto mb-4" />
-            <h2 className="text-2xl font-bold">Settings</h2>
-            <p className="text-gray-400 mt-2">Manage your account preferences here.</p>
-          </div>
-        )}
-      </main>
-    </div>
-  );
-}
+            <Settings className="w
