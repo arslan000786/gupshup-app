@@ -7,7 +7,7 @@ import {
   onAuthStateChanged 
 } from 'firebase/auth';
 import { 
-  collection, addDoc, getDocs, updateDoc, doc, increment, onSnapshot, query, orderBy 
+  collection, addDoc, getDocs, updateDoc, doc, increment, onSnapshot, query 
 } from 'firebase/firestore';
 import { 
   Flame, MessageSquare, Phone, User, Settings, 
@@ -26,7 +26,6 @@ export default function App() {
     { id: '1', username: '@cyber_ninja', caption: 'Building modern UI tools with React and Tailwind CSS 🚀', likes: 42100, comments: 1420 }
   ]);
 
-  // Auth State Listener
   useEffect(() => {
     const unsubscribeAuth = onAuthStateChanged(auth, (currentUser) => {
       setUser(currentUser);
@@ -34,7 +33,6 @@ export default function App() {
     return () => unsubscribeAuth();
   }, []);
 
-  // Fetch Reels from Firestore Real-time
   useEffect(() => {
     const q = query(collection(db, "reels"));
     const unsubscribeReels = onSnapshot(q, (snapshot) => {
@@ -68,7 +66,6 @@ export default function App() {
     signOut(auth);
   };
 
-  // Like Reel Function
   const handleLike = async (reelId) => {
     try {
       const reelRef = doc(db, "reels", reelId);
@@ -76,7 +73,6 @@ export default function App() {
         likes: increment(1)
       });
     } catch (error) {
-      // Agar Firestore mein document pehle se na ho toh default local state update karein
       setReels(reels.map(r => r.id === reelId ? { ...r, likes: r.likes + 1 } : r));
     }
   };
@@ -139,7 +135,6 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-[#0b0e14] text-white flex">
-      {/* Sidebar Navigation */}
       <aside className="w-64 bg-[#121824] border-r border-gray-800 p-4 flex flex-col justify-between hidden md:flex">
         <div>
           <div className="flex items-center space-x-2 mb-8 px-2">
@@ -185,7 +180,6 @@ export default function App() {
           </nav>
         </div>
 
-        {/* User Profile & Logout */}
         <div className="border-t border-gray-800 pt-4">
           <p className="text-xs text-gray-400 truncate mb-2 px-2">{user.email}</p>
           <button 
@@ -197,11 +191,9 @@ export default function App() {
         </div>
       </aside>
 
-      {/* Main Content Area */}
       <main className="flex-1 flex flex-col items-center justify-start p-4 overflow-y-auto">
         {activeTab === 'reels' && (
           <div className="w-full max-w-sm flex flex-col items-center space-y-4">
-            {/* Top Bar */}
             <div className="flex items-center justify-between w-full bg-[#121824] p-3 rounded-xl border border-gray-800">
               <div className="flex space-x-1.5">
                 <button 
@@ -235,7 +227,6 @@ export default function App() {
               </div>
             </div>
 
-            {/* Reel Feed Content */}
             {subTab === 'reels' && reels.map((reel) => (
               <div key={reel.id} className="w-full bg-[#121824] rounded-2xl overflow-hidden border border-gray-800 shadow-2xl relative mb-4">
                 <div className="p-4 flex justify-between items-center border-b border-gray-800">
@@ -250,7 +241,6 @@ export default function App() {
                   <Flame className="w-16 h-16 text-pink-500 mb-4 animate-pulse" />
                   <h2 className="font-bold text-lg text-gray-200">VERTICAL REEL STREAM</h2>
                   
-                  {/* Floating Action Buttons */}
                   <div className="absolute right-4 bottom-16 flex flex-col items-center space-y-4">
                     <div className="relative">
                       <div className="w-10 h-10 rounded-full bg-gray-700 border border-white overflow-hidden flex items-center justify-center">
@@ -277,7 +267,6 @@ export default function App() {
                     </div>
                   </div>
 
-                  {/* Reel Info */}
                   <div className="absolute bottom-4 left-4 text-left">
                     <h3 className="font-bold flex items-center space-x-2">
                       <span>{reel.username}</span> 
@@ -338,4 +327,12 @@ export default function App() {
 
         {activeTab === 'settings' && (
           <div className="text-center mt-20">
-            <Settings className="w
+            <Settings className="w-16 h-16 text-pink-500 mx-auto mb-4" />
+            <h2 className="text-2xl font-bold">Settings</h2>
+            <p className="text-gray-400 mt-2">Manage your account preferences here.</p>
+          </div>
+        )}
+      </main>
+    </div>
+  );
+}
