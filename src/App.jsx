@@ -11,8 +11,8 @@ import {
 } from 'firebase/firestore';
 import { 
   Flame, MessageSquare, Phone, User, Settings, 
-  Image as ImageIcon, Radio, Heart, MessageCircle, Share2, 
-  Volume2, Camera, Plus, Sparkles, Send, X, Video, Image as ImageIconLucide 
+  Radio, Heart, MessageCircle, Share2, 
+  Volume2, Camera, Sparkles, Send, X, Video, Image as ImageIconLucide, Upload 
 } from 'lucide-react';
 
 export default function App() {
@@ -26,7 +26,7 @@ export default function App() {
   
   const [showUploadModal, setShowUploadModal] = useState(false);
   const [captionInput, setCaptionInput] = useState('');
-  const [mediaUrlInput, setMediaUrlInput] = useState('');
+  const [mediaFile, setMediaFile] = useState(null);
   const [mediaType, setMediaType] = useState('video');
   const [activeCommentReel, setActiveCommentReel] = useState(null);
   const [commentInput, setCommentInput] = useState('');
@@ -51,7 +51,7 @@ export default function App() {
           await addDoc(collection(db, "reels"), {
             username: user ? user.email.split('@')[0] : "@cyber_ninja",
             caption: "Building modern UI tools with React and Tailwind CSS 🚀",
-            mediaUrl: "",
+            mediaUrl: "https://assets.mixkit.co/videos/preview/mixkit-tree-branches-in-the-breeze-1185-large.mp4",
             mediaType: "video",
             likes: 42100,
             comments: []
@@ -96,6 +96,20 @@ export default function App() {
     }
   };
 
+  // Handle File Selection and Convert to Local Object URL for preview/saving
+  const handleFileChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      const fileUrl = URL.createObjectURL(file);
+      setMediaFile(fileUrl);
+      if (file.type.includes('image')) {
+        setMediaType('photo');
+      } else {
+        setMediaType('video');
+      }
+    }
+  };
+
   const handleUploadReel = async (e) => {
     e.preventDefault();
     if (!captionInput.trim()) return;
@@ -103,13 +117,13 @@ export default function App() {
       await addDoc(collection(db, "reels"), {
         username: user ? `@${user.email.split('@')[0]}` : "@user",
         caption: captionInput,
-        mediaUrl: mediaUrlInput.trim(),
+        mediaUrl: mediaFile || "",
         mediaType: mediaType,
         likes: 1,
         comments: []
       });
       setCaptionInput('');
-      setMediaUrlInput('');
+      setMediaFile(null);
       setShowUploadModal(false);
       alert("Post kamyabi se upload ho gayi!");
     } catch (error) {
@@ -258,7 +272,7 @@ export default function App() {
                   onClick={() => setSubTab('reels')}
                   className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition ${subTab === 'reels' ? 'bg-pink-500 text-white' : 'bg-gray-800 text-gray-300 hover:bg-gray-700'}`}
                 >
-                  Reels
+                  Reels (Video)
                 </button>
                 <button 
                   onClick={() => setSubTab('photos')}
@@ -286,7 +300,8 @@ export default function App() {
               </div>
             </div>
 
-            {subTab === 'reels' && reels.map((reel) => (
+            {/* Reels Tab: Show only video posts */}
+            {subTab === 'reels' && reels.filter(r => r.mediaType === 'video').map((reel) => (
               <div key={reel.id} className="w-full bg-[#121824] rounded-2xl overflow-hidden border border-gray-800 shadow-2xl relative mb-4">
                 <div className="p-4 flex justify-between items-center border-b border-gray-800">
                   <span className="bg-pink-500/20 text-pink-400 text-xs px-3 py-1 rounded-full font-semibold flex items-center space-x-1">
@@ -298,15 +313,11 @@ export default function App() {
                 
                 <div className="h-[420px] bg-gradient-to-b from-indigo-950 to-gray-900 flex flex-col items-center justify-center relative p-4 text-center overflow-hidden">
                   {reel.mediaUrl ? (
-                    reel.mediaType === 'photo' ? (
-                      <img src={reel.mediaUrl} alt="Post media" className="absolute inset-0 w-full h-full object-cover opacity-80" />
-                    ) : (
-                      <video src={reel.mediaUrl} controls className="absolute inset-0 w-full h-full object-cover" />
-                    )
+                    <video src={reel.mediaUrl} controls className="absolute inset-0 w-full h-full object-cover" />
                   ) : (
                     <>
                       <Flame className="w-16 h-16 text-pink-500 mb-4 animate-pulse" />
-                      <h2 className="font-bold text-lg text-gray-200">GupShup Live Stream</h2>
+                      <h2 className="font-bold text-lg text-gray-200">GupShup Video Reel</h2>
                     </>
                   )}
                   
@@ -373,13 +384,42 @@ export default function App() {
               </div>
             ))}
 
-            {subTab === 'photos' && (
-              <div className="w-full bg-[#121824] p-6 rounded-2xl border border-gray-800 text-center">
-                <ImageIconLucide className="w-16 h-16 text-pink-500 mx-auto mb-4" />
-                <h2 className="text-xl font-bold">Photos Feed</h2>
-                <p className="text-gray-400 text-sm mt-2">Explore community photo streams and share your moments.</p>
+            {/* Photos Tab: Show only photo posts */}
+            {subTab === 'photos' && reels.filter(r => r.mediaType === 'photo').map((reel) => (
+              <div key={reel.id} className="w-full bg-[#121824] rounded-2xl overflow-hidden border border-gray-800 shadow-2xl relative mb-4">
+                <div className="p-4 flex justify-between items-center border-b border-gray-800">
+                  <span className="bg-indigo-500/20 text-indigo-400 text-xs px-3 py-1 rounded-full font-semibold flex items-center space-x-1">
+                    <ImageIconLucide className="w-3.5 h-3.5" />
+                    <span>Photo Post</span>
+                  </span>
+                </div>
+                
+                <div className="h-[420px] bg-gradient-to-b from-indigo-950 to-gray-900 flex flex-col items-center justify-center relative p-4 text-center overflow-hidden">
+                  {reel.mediaUrl ? (
+                    <img src={reel.mediaUrl} alt="Photo Post" className="absolute inset-0 w-full h-full object-cover" />
+                  ) : (
+                    <p className="text-gray-400 text-xs">No Image found</p>
+                  )}
+                  
+                  <div className="absolute right-4 bottom-16 flex flex-col items-center space-y-4 z-10">
+                    <div className="flex flex-col items-center">
+                      <Heart 
+                        onClick={() => handleLike(reel.id)} 
+                        className="w-7 h-7 text-white hover:text-pink-500 cursor-pointer transition active:scale-125 drop-shadow" 
+                      />
+                      <span className="text-xs mt-1 font-bold">{(reel.likes || 0).toLocaleString()}</span>
+                    </div>
+                  </div>
+
+                  <div className="absolute bottom-4 left-4 text-left z-10 bg-black/40 p-2 rounded-lg backdrop-blur-sm max-w-[260px]">
+                    <h3 className="font-bold flex items-center space-x-2 text-sm">
+                      <span>{reel.username}</span> 
+                    </h3>
+                    <p className="text-xs text-gray-200 mt-1">{reel.caption}</p>
+                  </div>
+                </div>
               </div>
-            )}
+            ))}
 
             {subTab === 'live' && (
               <div className="w-full bg-[#121824] p-6 rounded-2xl border border-gray-800 text-center">
@@ -440,43 +480,25 @@ export default function App() {
             </button>
             <h3 className="text-lg font-bold mb-4 flex items-center gap-2">
               <Camera className="text-pink-500 w-5 h-5" />
-              <span>Upload Video or Photo Post</span>
+              <span>Upload from Gallery / PC</span>
             </h3>
 
             <form onSubmit={handleUploadReel} className="space-y-4">
               <div>
-                <label className="block text-xs text-gray-400 mb-1.5">Select Media Type</label>
-                <div className="flex gap-2">
-                  <button
-                    type="button"
-                    onClick={() => setMediaType('video')}
-                    className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-lg text-xs font-semibold border transition ${mediaType === 'video' ? 'bg-pink-500/20 border-pink-500 text-pink-400' : 'bg-[#1a2233] border-gray-700 text-gray-400'}`}
-                  >
-                    <Video className="w-4 h-4" />
-                    <span>Video</span>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setMediaType('photo')}
-                    className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-lg text-xs font-semibold border transition ${mediaType === 'photo' ? 'bg-pink-500/20 border-pink-500 text-pink-400' : 'bg-[#1a2233] border-gray-700 text-gray-400'}`}
-                  >
-                    <ImageIconLucide className="w-4 h-4" />
-                    <span>Photo</span>
-                  </button>
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-xs text-gray-400 mb-1">
-                  {mediaType === 'video' ? 'Video Direct URL (mp4)' : 'Photo Direct URL (jpg/png)'}
+                <label className="block text-xs text-gray-400 mb-1.5">Select Media File (Photo or Video)</label>
+                <label className="flex flex-col items-center justify-center border-2 border-dashed border-gray-700 rounded-xl p-6 cursor-pointer hover:border-pink-500 bg-[#1a2233] transition">
+                  <Upload className="w-8 h-8 text-pink-500 mb-2" />
+                  <span className="text-xs text-gray-300 font-semibold">
+                    {mediaFile ? "File Selected! ✅" : "Click to browse mobile/PC storage"}
+                  </span>
+                  <span className="text-[10px] text-gray-500 mt-1">Supports MP4, JPG, PNG</span>
+                  <input 
+                    type="file" 
+                    accept="video/*,image/*"
+                    onChange={handleFileChange}
+                    className="hidden"
+                  />
                 </label>
-                <input 
-                  type="url"
-                  value={mediaUrlInput}
-                  onChange={(e) => setMediaUrlInput(e.target.value)}
-                  placeholder={mediaType === 'video' ? 'https://example.com/video.mp4' : 'https://example.com/image.jpg'}
-                  className="w-full bg-[#1a2233] border border-gray-700 rounded-lg p-2.5 text-xs text-white focus:outline-none focus:border-pink-500"
-                />
               </div>
 
               <div>
@@ -495,7 +517,7 @@ export default function App() {
                 type="submit"
                 className="w-full bg-gradient-to-r from-pink-500 to-purple-600 text-white font-semibold py-2.5 rounded-lg hover:opacity-90 transition text-sm shadow-lg"
               >
-                Publish to Firestore
+                Publish Post
               </button>
             </form>
           </div>
