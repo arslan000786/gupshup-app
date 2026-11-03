@@ -12,7 +12,7 @@ import {
 import { 
   Flame, MessageSquare, Phone, User, Settings, 
   Image as ImageIcon, Radio, Heart, MessageCircle, Share2, 
-  Volume2, Camera, Plus, Sparkles, Send, X 
+  Volume2, Camera, Plus, Sparkles, Send, X, Video, Image 
 } from 'lucide-react';
 
 export default function App() {
@@ -27,6 +27,8 @@ export default function App() {
   // New Post & Comment States
   const [showUploadModal, setShowUploadModal] = useState(false);
   const [captionInput, setCaptionInput] = useState('');
+  const [mediaUrlInput, setMediaUrlInput] = useState('');
+  const [mediaType, setMediaType] = useState('video'); // 'video' or 'photo'
   const [activeCommentReel, setActiveCommentReel] = useState(null);
   const [commentInput, setCommentInput] = useState('');
 
@@ -51,6 +53,8 @@ export default function App() {
           await addDoc(collection(db, "reels"), {
             username: user ? user.email.split('@')[0] : "@cyber_ninja",
             caption: "Building modern UI tools with React and Tailwind CSS 🚀",
+            mediaUrl: "",
+            mediaType: "video",
             likes: 42100,
             comments: []
           });
@@ -94,7 +98,7 @@ export default function App() {
     }
   };
 
-  // Upload New Reel / Post
+  // Upload New Reel / Post with Media Option
   const handleUploadReel = async (e) => {
     e.preventDefault();
     if (!captionInput.trim()) return;
@@ -102,10 +106,13 @@ export default function App() {
       await addDoc(collection(db, "reels"), {
         username: user ? `@${user.email.split('@')[0]}` : "@user",
         caption: captionInput,
+        mediaUrl: mediaUrlInput.trim(),
+        mediaType: mediaType,
         likes: 1,
         comments: []
       });
       setCaptionInput('');
+      setMediaUrlInput('');
       setShowUploadModal(false);
       alert("Post kamyabi se upload ho gayi!");
     } catch (error) {
@@ -297,39 +304,50 @@ export default function App() {
                   <Volume2 className="w-5 h-5 text-gray-400 cursor-pointer hover:text-white" />
                 </div>
                 
-                <div className="h-[420px] bg-gradient-to-b from-indigo-950 to-gray-900 flex flex-col items-center justify-center relative p-4 text-center">
-                  <Flame className="w-16 h-16 text-pink-500 mb-4 animate-pulse" />
-                  <h2 className="font-bold text-lg text-gray-200">GupShup Live Stream</h2>
+                <div className="h-[420px] bg-gradient-to-b from-indigo-950 to-gray-900 flex flex-col items-center justify-center relative p-4 text-center overflow-hidden">
+                  {/* Display Media if available */}
+                  {reel.mediaUrl ? (
+                    reel.mediaType === 'photo' ? (
+                      <img src={reel.mediaUrl} alt="Post media" className="absolute inset-0 w-full h-full object-cover opacity-80" />
+                    ) : (
+                      <video src={reel.mediaUrl} controls className="absolute inset-0 w-full h-full object-cover" />
+                    )
+                  ) : (
+                    <>
+                      <Flame className="w-16 h-16 text-pink-500 mb-4 animate-pulse" />
+                      <h2 className="font-bold text-lg text-gray-200">GupShup Live Stream</h2>
+                    </>
+                  )}
                   
                   {/* Floating Action Buttons */}
-                  <div className="absolute right-4 bottom-16 flex flex-col items-center space-y-4">
+                  <div className="absolute right-4 bottom-16 flex flex-col items-center space-y-4 z-10">
                     <div className="flex flex-col items-center">
                       <Heart 
                         onClick={() => handleLike(reel.id)} 
-                        className="w-7 h-7 text-white hover:text-pink-500 cursor-pointer transition active:scale-125" 
+                        className="w-7 h-7 text-white hover:text-pink-500 cursor-pointer transition active:scale-125 drop-shadow" 
                       />
-                      <span className="text-xs mt-1">{(reel.likes || 0).toLocaleString()}</span>
+                      <span className="text-xs mt-1 font-bold">{(reel.likes || 0).toLocaleString()}</span>
                     </div>
                     <div className="flex flex-col items-center">
                       <MessageCircle 
                         onClick={() => setActiveCommentReel(activeCommentReel === reel.id ? null : reel.id)}
-                        className="w-7 h-7 text-white hover:text-pink-500 cursor-pointer transition" 
+                        className="w-7 h-7 text-white hover:text-pink-500 cursor-pointer transition drop-shadow" 
                       />
-                      <span className="text-xs mt-1">{reel.comments ? reel.comments.length : 0}</span>
+                      <span className="text-xs mt-1 font-bold">{reel.comments ? reel.comments.length : 0}</span>
                     </div>
                     <div className="flex flex-col items-center">
-                      <Share2 className="w-7 h-7 text-white hover:text-pink-500 cursor-pointer transition" />
-                      <span className="text-xs mt-1">Share</span>
+                      <Share2 className="w-7 h-7 text-white hover:text-pink-500 cursor-pointer transition drop-shadow" />
+                      <span className="text-xs mt-1 font-bold">Share</span>
                     </div>
                   </div>
 
                   {/* Reel Info */}
-                  <div className="absolute bottom-4 left-4 text-left">
-                    <h3 className="font-bold flex items-center space-x-2">
+                  <div className="absolute bottom-4 left-4 text-left z-10 bg-black/40 p-2 rounded-lg backdrop-blur-sm max-w-[260px]">
+                    <h3 className="font-bold flex items-center space-x-2 text-sm">
                       <span>{reel.username}</span> 
-                      <span className="text-xs bg-purple-600 px-1.5 py-0.5 rounded text-white">Verified</span>
+                      <span className="text-[10px] bg-purple-600 px-1 py-0.5 rounded text-white">Verified</span>
                     </h3>
-                    <p className="text-xs text-gray-300 mt-1">{reel.caption}</p>
+                    <p className="text-xs text-gray-200 mt-1">{reel.caption}</p>
                   </div>
                 </div>
 
@@ -346,120 +364,10 @@ export default function App() {
                           </div>
                         ))
                       ) : (
-                        <p className="text-xs text-gray-500 text-italic">Koi comment nahi hai. Pehla comment aap karein!</p>
+                        <p className="text-xs text-gray-500 italic">Koi comment nahi hai. Pehla comment aap karein!</p>
                       )}
                     </div>
 
                     <form onSubmit={(e) => handleAddComment(e, reel.id)} className="flex gap-2">
                       <input 
-                        type="text" 
-                        placeholder="Write a comment..." 
-                        value={commentInput}
-                        onChange={(e) => setCommentInput(e.target.value)}
-                        className="flex-1 bg-[#121824] text-xs px-3 py-2 rounded-lg border border-gray-700 focus:outline-none focus:border-pink-500 text-white"
-                      />
-                      <button type="submit" className="bg-pink-500 hover:bg-pink-600 px-3 py-2 rounded-lg text-white text-xs">
-                        <Send className="w-3.5 h-3.5" />
-                      </button>
-                    </form>
-                  </div>
-                )}
-              </div>
-            ))}
-
-            {subTab === 'photos' && (
-              <div className="w-full bg-[#121824] p-6 rounded-2xl border border-gray-800 text-center">
-                <ImageIcon className="w-16 h-16 text-pink-500 mx-auto mb-4" />
-                <h2 className="text-xl font-bold">Photos Feed</h2>
-                <p className="text-gray-400 text-sm mt-2">Explore community photo streams and share your moments.</p>
-              </div>
-            )}
-
-            {subTab === 'live' && (
-              <div className="w-full bg-[#121824] p-6 rounded-2xl border border-gray-800 text-center">
-                <Radio className="w-16 h-16 text-emerald-500 mx-auto mb-4 animate-pulse" />
-                <h2 className="text-xl font-bold">Live Streams (3 Active)</h2>
-                <p className="text-gray-400 text-sm mt-2">Join ongoing live broadcasts from creators now.</p>
-              </div>
-            )}
-          </div>
-        )}
-
-        {activeTab === 'chats' && (
-          <div className="text-center mt-20">
-            <MessageSquare className="w-16 h-16 text-pink-500 mx-auto mb-4" />
-            <h2 className="text-2xl font-bold">Chats</h2>
-            <p className="text-gray-400 mt-2">No messages yet. Start chatting with friends!</p>
-          </div>
-        )}
-
-        {activeTab === 'calls' && (
-          <div className="text-center mt-20">
-            <Phone className="w-16 h-16 text-pink-500 mx-auto mb-4" />
-            <h2 className="text-2xl font-bold">Calls</h2>
-            <p className="text-gray-400 mt-2">No recent calls.</p>
-          </div>
-        )}
-
-        {activeTab === 'profile' && (
-          <div className="text-center mt-10 bg-[#121824] p-8 rounded-2xl border border-gray-800 max-w-md w-full">
-            <div className="w-20 h-20 bg-pink-500/20 text-pink-500 rounded-full flex items-center justify-center mx-auto mb-4 text-2xl font-bold">
-              {user.email[0].toUpperCase()}
-            </div>
-            <h2 className="text-xl font-bold">{user.email}</h2>
-            <p className="text-gray-400 text-sm mt-1">GupShup Verified User</p>
-            <button onClick={handleLogout} className="mt-6 bg-red-500 text-white px-6 py-2 rounded-lg font-semibold hover:bg-red-600 transition">
-              Log Out
-            </button>
-          </div>
-        )}
-
-        {activeTab === 'settings' && (
-          <div className="text-center mt-20">
-            <Settings className="w-16 h-16 text-pink-500 mx-auto mb-4" />
-            <h2 className="text-2xl font-bold">Settings</h2>
-            <p className="text-gray-400 mt-2">Manage your account preferences here.</p>
-          </div>
-        )}
-      </main>
-
-      {/* Upload Modal Popup */}
-      {showUploadModal && (
-        <div className="fixed inset-0 bg-black/70 flex items-center justify-center p-4 z-50">
-          <div className="bg-[#121824] p-6 rounded-2xl w-full max-w-md border border-gray-800 shadow-2xl relative">
-            <button 
-              onClick={() => setShowUploadModal(false)}
-              className="absolute top-4 right-4 text-gray-400 hover:text-white"
-            >
-              <X className="w-5 h-5" />
-            </button>
-            <h3 className="text-lg font-bold mb-4 flex items-center gap-2">
-              <Camera className="text-pink-500 w-5 h-5" />
-              <span>Upload New Reel / Post</span>
-            </h3>
-
-            <form onSubmit={handleUploadReel} className="space-y-4">
-              <div>
-                <label className="block text-xs text-gray-400 mb-1">Caption / Description</label>
-                <textarea 
-                  rows="3"
-                  required
-                  value={captionInput}
-                  onChange={(e) => setCaptionInput(e.target.value)}
-                  placeholder="What's happening on your mind today? 🚀"
-                  className="w-full bg-[#1a2233] border border-gray-700 rounded-lg p-3 text-sm text-white focus:outline-none focus:border-pink-500"
-                ></textarea>
-              </div>
-              <button 
-                type="submit"
-                className="w-full bg-gradient-to-r from-pink-500 to-purple-600 text-white font-semibold py-2.5 rounded-lg hover:opacity-90 transition text-sm"
-              >
-                Publish to Firestore
-              </button>
-            </form>
-          </div>
-        </div>
-      )}
-    </div>
-  );
-}
+                        type="text"
