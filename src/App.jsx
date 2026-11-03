@@ -7,12 +7,12 @@ import {
   onAuthStateChanged 
 } from 'firebase/auth';
 import { 
-  collection, addDoc, getDocs, updateDoc, doc, increment, onSnapshot, query 
+  collection, addDoc, updateDoc, doc, increment, onSnapshot, query, arrayUnion 
 } from 'firebase/firestore';
 import { 
   Flame, MessageSquare, Phone, User, Settings, 
   Image as ImageIcon, Radio, Heart, MessageCircle, Share2, 
-  Volume2, Camera, Plus, Sparkles 
+  Volume2, Camera, Plus, Sparkles, Send, X 
 } from 'lucide-react';
 
 export default function App() {
@@ -22,9 +22,13 @@ export default function App() {
   const [isSignUp, setIsSignUp] = useState(false);
   const [activeTab, setActiveTab] = useState('reels');
   const [subTab, setSubTab] = useState('reels');
-  const [reels, setReels] = useState([
-    { id: '1', username: '@cyber_ninja', caption: 'Building modern UI tools with React and Tailwind CSS 🚀', likes: 42100, comments: 1420 }
-  ]);
+  const [reels, setReels] = useState([]);
+  
+  // New Post & Comment States
+  const [showUploadModal, setShowUploadModal] = useState(false);
+  const [captionInput, setCaptionInput] = useState('');
+  const [activeCommentReel, setActiveCommentReel] = useState(null);
+  const [commentInput, setCommentInput] = useState('');
 
   useEffect(() => {
     const unsubscribeAuth = onAuthStateChanged(auth, (currentUser) => {
@@ -33,7 +37,7 @@ export default function App() {
     return () => unsubscribeAuth();
   }, []);
 
-  // Fetch Reels or Initialize Default Reel in Firestore
+  // Fetch Reels and auto-initialize if empty
   useEffect(() => {
     const q = query(collection(db, "reels"));
     const unsubscribeReels = onSnapshot(q, async (snapshot) => {
@@ -43,13 +47,12 @@ export default function App() {
       }));
       
       if (reelsData.length === 0) {
-        // Agar database khali hai toh pehli default post khud hi save kar do
         try {
           await addDoc(collection(db, "reels"), {
-            username: "@cyber_ninja",
+            username: user ? user.email.split('@')[0] : "@cyber_ninja",
             caption: "Building modern UI tools with React and Tailwind CSS 🚀",
             likes: 42100,
-            comments: 1420
+            comments: []
           });
         } catch (err) {
           console.log("Error adding default reel:", err);
@@ -59,7 +62,7 @@ export default function App() {
       }
     });
     return () => unsubscribeReels();
-  }, []);
+  }, [user]);
 
   const handleAuth = async (e) => {
     e.preventDefault();
@@ -87,7 +90,45 @@ export default function App() {
         likes: increment(1)
       });
     } catch (error) {
-      setReels(reels.map(r => r.id === reelId ? { ...r, likes: r.likes + 1 } : r));
+      console.log(error);
+    }
+  };
+
+  // Upload New Reel / Post
+  const handleUploadReel = async (e) => {
+    e.preventDefault();
+    if (!captionInput.trim()) return;
+    try {
+      await addDoc(collection(db, "reels"), {
+        username: user ? `@${user.email.split('@')[0]}` : "@user",
+        caption: captionInput,
+        likes: 1,
+        comments: []
+      });
+      setCaptionInput('');
+      setShowUploadModal(false);
+      alert("Post kamyabi se upload ho gayi!");
+    } catch (error) {
+      alert("Upload mein masla aaya: " + error.message);
+    }
+  };
+
+  // Add Comment to a Reel
+  const handleAddComment = async (e, reelId) => {
+    e.preventDefault();
+    if (!commentInput.trim()) return;
+    try {
+      const reelRef = doc(db, "reels", reelId);
+      await updateDoc(reelRef, {
+        comments: arrayUnion({
+          user: user ? user.email.split('@')[0] : "Anonymous",
+          text: commentInput,
+          time: new Date().toLocaleTimeString()
+        })
+      });
+      setCommentInput('');
+    } catch (error) {
+      alert("Comment save nahi ho saka: " + error.message);
     }
   };
 
@@ -148,7 +189,8 @@ export default function App() {
   }
 
   return (
-    <div className="min-h-screen bg-[#0b0e14] text-white flex">
+    <div className="min-h-screen bg-[#0b0e14] text-white flex relative">
+      {/* Sidebar Navigation */}
       <aside className="w-64 bg-[#121824] border-r border-gray-800 p-4 flex flex-col justify-between hidden md:flex">
         <div>
           <div className="flex items-center space-x-2 mb-8 px-2">
@@ -205,9 +247,11 @@ export default function App() {
         </div>
       </aside>
 
+      {/* Main Content Area */}
       <main className="flex-1 flex flex-col items-center justify-start p-4 overflow-y-auto">
         {activeTab === 'reels' && (
           <div className="w-full max-w-sm flex flex-col items-center space-y-4">
+            {/* Top Bar */}
             <div className="flex items-center justify-between w-full bg-[#121824] p-3 rounded-xl border border-gray-800">
               <div className="flex space-x-1.5">
                 <button 
@@ -231,56 +275,55 @@ export default function App() {
               </div>
 
               <div className="flex items-center space-x-1.5">
-                <button className="p-1.5 bg-gray-800 hover:bg-gray-700 rounded-lg text-gray-300 transition" title="Camera">
+                <button 
+                  onClick={() => setShowUploadModal(true)}
+                  className="p-1.5 bg-pink-500 hover:bg-pink-600 text-white rounded-lg transition flex items-center space-x-1 text-xs font-semibold" 
+                  title="Upload Post"
+                >
                   <Camera className="w-4 h-4" />
-                </button>
-                <button className="flex items-center space-x-1 px-2.5 py-1.5 bg-emerald-500 hover:bg-emerald-600 text-white rounded-lg text-xs font-semibold transition">
-                  <Radio className="w-3.5 h-3.5 animate-pulse" />
-                  <span>Go Live</span>
+                  <span>Upload</span>
                 </button>
               </div>
             </div>
 
+            {/* Reel Feed Content */}
             {subTab === 'reels' && reels.map((reel) => (
               <div key={reel.id} className="w-full bg-[#121824] rounded-2xl overflow-hidden border border-gray-800 shadow-2xl relative mb-4">
                 <div className="p-4 flex justify-between items-center border-b border-gray-800">
                   <span className="bg-pink-500/20 text-pink-400 text-xs px-3 py-1 rounded-full font-semibold flex items-center space-x-1">
                     <Flame className="w-3.5 h-3.5" />
-                    <span>Trending Tech</span>
+                    <span>Trending Reel</span>
                   </span>
                   <Volume2 className="w-5 h-5 text-gray-400 cursor-pointer hover:text-white" />
                 </div>
                 
-                <div className="h-[450px] bg-gradient-to-b from-indigo-950 to-gray-900 flex flex-col items-center justify-center relative p-4 text-center">
+                <div className="h-[420px] bg-gradient-to-b from-indigo-950 to-gray-900 flex flex-col items-center justify-center relative p-4 text-center">
                   <Flame className="w-16 h-16 text-pink-500 mb-4 animate-pulse" />
-                  <h2 className="font-bold text-lg text-gray-200">VERTICAL REEL STREAM</h2>
+                  <h2 className="font-bold text-lg text-gray-200">GupShup Live Stream</h2>
                   
+                  {/* Floating Action Buttons */}
                   <div className="absolute right-4 bottom-16 flex flex-col items-center space-y-4">
-                    <div className="relative">
-                      <div className="w-10 h-10 rounded-full bg-gray-700 border border-white overflow-hidden flex items-center justify-center">
-                        <User className="w-6 h-6 text-white" />
-                      </div>
-                      <div className="absolute -bottom-1 -right-1 bg-pink-500 rounded-full p-0.5">
-                        <Plus className="w-3 h-3 text-white" />
-                      </div>
-                    </div>
                     <div className="flex flex-col items-center">
                       <Heart 
                         onClick={() => handleLike(reel.id)} 
                         className="w-7 h-7 text-white hover:text-pink-500 cursor-pointer transition active:scale-125" 
                       />
-                      <span className="text-xs mt-1">{reel.likes.toLocaleString()}</span>
+                      <span className="text-xs mt-1">{(reel.likes || 0).toLocaleString()}</span>
                     </div>
                     <div className="flex flex-col items-center">
-                      <MessageCircle className="w-7 h-7 text-white hover:text-pink-500 cursor-pointer transition" />
-                      <span className="text-xs mt-1">{reel.comments}</span>
+                      <MessageCircle 
+                        onClick={() => setActiveCommentReel(activeCommentReel === reel.id ? null : reel.id)}
+                        className="w-7 h-7 text-white hover:text-pink-500 cursor-pointer transition" 
+                      />
+                      <span className="text-xs mt-1">{reel.comments ? reel.comments.length : 0}</span>
                     </div>
                     <div className="flex flex-col items-center">
                       <Share2 className="w-7 h-7 text-white hover:text-pink-500 cursor-pointer transition" />
-                      <span className="text-xs mt-1">310</span>
+                      <span className="text-xs mt-1">Share</span>
                     </div>
                   </div>
 
+                  {/* Reel Info */}
                   <div className="absolute bottom-4 left-4 text-left">
                     <h3 className="font-bold flex items-center space-x-2">
                       <span>{reel.username}</span> 
@@ -289,6 +332,38 @@ export default function App() {
                     <p className="text-xs text-gray-300 mt-1">{reel.caption}</p>
                   </div>
                 </div>
+
+                {/* Comments Section Drawer */}
+                {activeCommentReel === reel.id && (
+                  <div className="bg-[#1a2233] p-4 border-t border-gray-800 max-h-60 overflow-y-auto">
+                    <h4 className="text-xs font-bold text-gray-400 mb-2 uppercase tracking-wider">Comments</h4>
+                    <div className="space-y-2 mb-3">
+                      {reel.comments && reel.comments.length > 0 ? (
+                        reel.comments.map((c, index) => (
+                          <div key={index} className="bg-[#121824] p-2 rounded-lg text-xs">
+                            <span className="font-bold text-pink-400">@{c.user}: </span>
+                            <span className="text-gray-300">{c.text}</span>
+                          </div>
+                        ))
+                      ) : (
+                        <p className="text-xs text-gray-500 text-italic">Koi comment nahi hai. Pehla comment aap karein!</p>
+                      )}
+                    </div>
+
+                    <form onSubmit={(e) => handleAddComment(e, reel.id)} className="flex gap-2">
+                      <input 
+                        type="text" 
+                        placeholder="Write a comment..." 
+                        value={commentInput}
+                        onChange={(e) => setCommentInput(e.target.value)}
+                        className="flex-1 bg-[#121824] text-xs px-3 py-2 rounded-lg border border-gray-700 focus:outline-none focus:border-pink-500 text-white"
+                      />
+                      <button type="submit" className="bg-pink-500 hover:bg-pink-600 px-3 py-2 rounded-lg text-white text-xs">
+                        <Send className="w-3.5 h-3.5" />
+                      </button>
+                    </form>
+                  </div>
+                )}
               </div>
             ))}
 
@@ -347,6 +422,44 @@ export default function App() {
           </div>
         )}
       </main>
+
+      {/* Upload Modal Popup */}
+      {showUploadModal && (
+        <div className="fixed inset-0 bg-black/70 flex items-center justify-center p-4 z-50">
+          <div className="bg-[#121824] p-6 rounded-2xl w-full max-w-md border border-gray-800 shadow-2xl relative">
+            <button 
+              onClick={() => setShowUploadModal(false)}
+              className="absolute top-4 right-4 text-gray-400 hover:text-white"
+            >
+              <X className="w-5 h-5" />
+            </button>
+            <h3 className="text-lg font-bold mb-4 flex items-center gap-2">
+              <Camera className="text-pink-500 w-5 h-5" />
+              <span>Upload New Reel / Post</span>
+            </h3>
+
+            <form onSubmit={handleUploadReel} className="space-y-4">
+              <div>
+                <label className="block text-xs text-gray-400 mb-1">Caption / Description</label>
+                <textarea 
+                  rows="3"
+                  required
+                  value={captionInput}
+                  onChange={(e) => setCaptionInput(e.target.value)}
+                  placeholder="What's happening on your mind today? 🚀"
+                  className="w-full bg-[#1a2233] border border-gray-700 rounded-lg p-3 text-sm text-white focus:outline-none focus:border-pink-500"
+                ></textarea>
+              </div>
+              <button 
+                type="submit"
+                className="w-full bg-gradient-to-r from-pink-500 to-purple-600 text-white font-semibold py-2.5 rounded-lg hover:opacity-90 transition text-sm"
+              >
+                Publish to Firestore
+              </button>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
